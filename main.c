@@ -9,146 +9,203 @@
 #include<linux/sched.h>
 #include<linux/kernel.h>
 
-#define KEY_NUM		9527
-#define MEM_SIZE	64
-#define num_node 1
-#define core_per_node 20
-
-int past[121][4]={0, }, present[121][4]={0, };
-int diff[121][4], total[121];
-
-void get_cpu_util(){
-    int n_core = num_node * core_per_node;
-    int n4, n5, n6, n7, n8, n9;
-
-    FILE* statFile = fopen("/proc/stat", "r");
-    char cpuId[6]={0};
-
-    memset(total, 0, sizeof(total));
-
-    for(int i=0;i<=n_core;i++){
-        fscanf(statFile, "%s %d %d %d %d %d %d %d %d %d %d",
-                cpuId, &present[i][0],  &present[i][1], &present[i][2], &present[i][3],
-                &n4, &n5, &n6, &n7, &n8, &n9);
-        //printf("%s\n", cpuId);
-
-        for(int j=0;j<4;j++){
-            diff[i][j] = present[i][j] - past[i][j];
-            total[i] += diff[i][j];
-        }
-        //printf("diff : %d, total : %d\n", diff[i][3], total[i]);
-        printf("cpu%d usage : %f%%\n", i, 100.0*(1.0-(diff[i][3]/(double)total[i])));
-
-        memcpy(past[i], present[i], sizeof(int)*4);
-    }
-
-    //utilization per NODE
-    double t, idle;
-
-    for(int i=0;i<n_core;i++){
-        if(i%core_per_node==0){
-            t = 0;
-            idle = 0;
-        }
-        t+=(double)total[i+1];
-        idle+=(double)diff[i+1][3];
-
-        if(i%core_per_node==core_per_node-1){
-            //printf("%lf %lf\n", idle, t);
-            printf("NODE %d utilization : %lf%%\n", i/core_per_node, 100.0*(1.0-idle/t));
-        }
-    }
-    fclose(statFile);
-
-    return ;
+void *pcm(void* data){
+	system("./pcm_jw/pcm-memory.x -csv > BW.log");
+}
+void *cpu_util(void* data){
+	system("./cpu_util -csv");
+}
+void *numa(void* data){
+	printf("broken\n");
+	//system("./pcm_jw/pcm-numa.x -csv > numa.log");
+}
+void *app1(void* data){
+	system("./filebench/filebench -f ./filebench/mywebserver.f");
+}
+void *app2(void* data){
+        system("./filebench/filebench -f ./filebench/mywebserver.f");
+}
+void *app3(void* data){
+        system("./filebench/filebench -f ./filebench/mywebserver.f");
+}
+void *app4(void* data){
+        system("./filebench/filebench -f ./filebench/mywebserver.f");
+}
+void *app5(void* data){
+        system("./filebench/filebench -f ./filebench/mywebserver.f");
+}
+void *app6(void* data){
+        system("./filebench/filebench -f ./filebench/mywebserver.f");
+}
+void *app7(void* data){
+        system("./filebench/filebench -f ./filebench/mywebserver.f");
+}
+void *app8(void* data){
+        system("./filebench/filebench -f ./filebench/mywebserver.f");
+}
+void *app9(void* data){
+        system("./filebench/filebench -f ./filebench/mywebserver.f");
+}
+void *app10(void* data){
+        system("./filebench/filebench -f ./filebench/mywebserver.f");
 }
 
-void *func1(void* data){
-	system("./fxmark_jw/bin/run-fxmark.py");
-	/*while(1){
-	  printf("func1()\n");
-	  sleep(1);
-	  }*/
-}
-void *func2(void* data){
-	system("./pcm_jw/pcm-memory.x");
-	/*while(1){
-	  printf("func2()\n");
-	  sleep(1);
-	  }*/
-}
 int main()
 {
-	pthread_t t1, t2;
+	pthread_t t_pcm, t_util, t_numa;
+	pthread_t t1, t2, t3, t4, t5, t6, t7, t8, t9, t10;
+	pthread_t t11, t12, t13, t14, t15, t16, t17, t18, t19, t20;
 	int tid, status;
 	char p1[] = "thread_1";
 	char p2[] = "thread_2";
-	char pm[] = "thread_main";
+	char p3[] = "thread_3";
+	char p4[] = "thread_4";
+	char p5[] = "thread_5";
+	char p6[] = "thread_6";
+        char p7[] = "thread_7";
+        char p8[] = "thread_8";
+        char p9[] = "thread_9";
+        char p10[] = "thread_10";
+	char p11[] = "thread_11";
+        char p12[] = "thread_12";
+        char p13[] = "thread_13";
+        char p14[] = "thread_14";
+        char p15[] = "thread_15";
+        char p16[] = "thread_16";
+        char p17[] = "thread_17";
+        char p18[] = "thread_18";
+        char p19[] = "thread_19";
+        char p20[] = "thread_20";
+	
+	char p_pcm[] = "thread_pcm";
+	char p_util[] = "thread_util";
+	char p_numa[] = "thread_numa";
 
-	float readBW, writeBW;
-
-	int   shm_id;
-	void *shm_addr;
-
-	if ( -1 == ( shm_id = shmget( (key_t)KEY_NUM, MEM_SIZE, IPC_CREAT|0666)))
-	{
-		printf( "shared memory creation fail\n");
-		return -1;
-	}
-
-	//thread_1 for func1 (fxmark)
-	tid = pthread_create(&t1, NULL, func1, (void*)p1);
+	//thread for pcm profiling tool
+	tid = pthread_create(&t_pcm, NULL, pcm, (void*)p_pcm);
 	if(tid<0){
-		printf("thread_1 creation fail");
+		printf("thread_pcm creation fail");
 		return -1;
 	}
 
-	//thread_2 for func2 (pcm profiling tool)
-	tid = pthread_create(&t2, NULL, func2, (void*)p2);
+	//thread for cpu utilization tool
+	tid = pthread_create(&t_util, NULL, cpu_util, (void*)p_util);
 	if(tid<0){
-		printf("thread_2 creation fail");
+		printf("thread_util creation fail");
 		return -1;
 	}
 
-	while(1){
-		if ( ( void *)-1 == ( shm_addr = shmat( shm_id, ( void *)0, 0)))
-		{
-			printf( "shared memory attach fail\n");
-			return -1;
-		}
-		else
-		{
-			printf( "shared memory attach success!\n");
-		}
+	//thread for numa access pattern
+        tid = pthread_create(&t_numa, NULL, numa, (void*)p_numa);
+        if(tid<0){
+                printf("thread_numa creation fail");
+                return -1;
+        }
 
-		void *tmp = shm_addr;
-		readBW = atof((char*)shm_addr);
-		shm_addr += sizeof(float);
-		writeBW = atof((char*)shm_addr);
-		shm_addr = tmp;
+	//thread for application 1
+	tid = pthread_create(&t1, NULL, app1, (void*)p1);
+        if(tid<0){
+                printf("thread creation fail");
+                return -1;
+        }
+	
+	//thread for application 2
+	tid = pthread_create(&t2, NULL, app1, (void*)p2);
+        if(tid<0){
+                printf("thread creation fail");
+                return -1;
+        }
+	
+	//thread for application 3
+        tid = pthread_create(&t3, NULL, app3, (void*)p3);
+        if(tid<0){
+                printf("thread creation fail");
+                return -1;
+        }
+	//thread for application 4
+        tid = pthread_create(&t4, NULL, app4, (void*)p4);
+        if(tid<0){
+                printf("thread creation fail");
+                return -1;
+        }
+	 //thread for application 5
+        tid = pthread_create(&t5, NULL, app5, (void*)p5);
+        if(tid<0){
+                printf("thread creation fail");
+                return -1;
+        }
+	
+	/*
+	//thread for application 6
+        tid = pthread_create(&t6, NULL, app6, (void*)p6);
+        if(tid<0){
+                printf("thread creation fail");
+                return -1;
+        }
 
-		printf("readBW : %f\n", readBW);
-		printf("writeBW : %f\n", writeBW);
+        //thread for application 7
+        tid = pthread_create(&t7, NULL, app7, (void*)p7);
+        if(tid<0){
+                printf("thread creation fail");
+                return -1;
+        }
 
-		shm_addr = tmp;
+        //thread for application 8
+        tid = pthread_create(&t8, NULL, app8, (void*)p8);
+        if(tid<0){
+                printf("thread creation fail");
+                return -1;
+        }
+        //thread for application 9
+        tid = pthread_create(&t9, NULL, app9, (void*)p9);
+        if(tid<0){
+                printf("thread creation fail");
+                return -1;
+        }
+         //thread for application 10
+        tid = pthread_create(&t10, NULL, app10, (void*)p10);
+        if(tid<0){
+                printf("thread creation fail");
+                return -1;
+        }*/
+	/*
+	tid = pthread_create(&t11, NULL, app1, (void*)p11);
+	tid = pthread_create(&t12, NULL, app2, (void*)p12);
+	tid = pthread_create(&t13, NULL, app3, (void*)p13);
+	tid = pthread_create(&t14, NULL, app4, (void*)p14);
+	tid = pthread_create(&t15, NULL, app5, (void*)p15);
+	tid = pthread_create(&t16, NULL, app6, (void*)p16);
+	tid = pthread_create(&t17, NULL, app7, (void*)p17);
+	tid = pthread_create(&t18, NULL, app8, (void*)p18);
+	tid = pthread_create(&t19, NULL, app9, (void*)p19);
+	tid = pthread_create(&t20, NULL, app10, (void*)p20);*/
 
-		if ( -1 == shmdt(shm_addr))
-		{
-			printf( "shared memory detach fail\n");
-			return -1;
-		}
-		else
-		{
-			printf( "shared memory detach success\n");
-		}
+	pthread_join(t_pcm, (void**)&status);
+	pthread_join(t_util, (void**)&status);
+	pthread_join(t_numa, (void**)&status);
 
-		//cpu utilization
-		get_cpu_util();
-		sleep(1);
-
-	}
 	pthread_join(t1, (void**)&status);
 	pthread_join(t2, (void**)&status);
+	pthread_join(t3, (void**)&status);
+	pthread_join(t4, (void**)&status);
+	pthread_join(t5, (void**)&status);
+	
+	/*pthread_join(t6, (void**)&status);
+        pthread_join(t7, (void**)&status);
+        pthread_join(t8, (void**)&status);
+        pthread_join(t9, (void**)&status);
+        pthread_join(t10, (void**)&status);*/
+
+	/*pthread_join(t11, (void**)&status);
+        pthread_join(t12, (void**)&status);
+        pthread_join(t13, (void**)&status);
+        pthread_join(t14, (void**)&status);
+        pthread_join(t15, (void**)&status);
+        pthread_join(t16, (void**)&status);
+        pthread_join(t17, (void**)&status);
+        pthread_join(t18, (void**)&status);
+        pthread_join(t19, (void**)&status);
+        pthread_join(t20, (void**)&status);*/
 
 	return 0;
 }
