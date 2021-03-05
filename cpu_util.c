@@ -12,6 +12,7 @@
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 #define num_node 2
 #define core_per_node 28
 =======
@@ -22,6 +23,10 @@
 #define num_node 2
 #define core_per_node 28
 >>>>>>> c401946... profiling tool first init
+=======
+#define num_node 2
+#define core_per_node 28
+>>>>>>> b74f7a3320ff2f4605f12e3fdd72e2a06d694ed7
 
 int past[121][4]={0, }, present[121][4]={0, };
 int diff[121][4], total[121];
