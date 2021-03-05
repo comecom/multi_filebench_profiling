@@ -11,12 +11,17 @@
 #include<linux/kernel.h>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 #define num_node 2
 #define core_per_node 28
 =======
 #define num_node 8
 #define core_per_node 15
 >>>>>>> f905bda... multi app profiling
+=======
+#define num_node 2
+#define core_per_node 28
+>>>>>>> c401946... profiling tool first init
 
 int past[121][4]={0, }, present[121][4]={0, };
 int diff[121][4], total[121];
