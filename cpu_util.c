@@ -10,8 +10,8 @@
 #include<linux/sched.h>
 #include<linux/kernel.h>
 
-#define num_node 8
-#define core_per_node 15
+#define num_node 2
+#define core_per_node 28
 
 int past[121][4]={0, }, present[121][4]={0, };
 int diff[121][4], total[121];
